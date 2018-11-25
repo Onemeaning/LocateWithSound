@@ -6,17 +6,35 @@
 
     <TableRow>
 
-        <ImageView
-            android:id="@+id/tupian"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:src="@drawable/tubiao" />
-
-        <TextView
-            android:id="@+id/tishi"
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="26px" />
-    </TableRow>
+            android:orientation="horizontal">
 
+            <ImageView
+                android:id="@+id/tupian"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
+                android:src="@drawable/tubiao" />
+
+            <TextView
+                android:id="@+id/fileName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@+id/tupian"
+                android:layout_centerVertical="true"
+                android:textSize="40px" />
+
+            <TextView
+                android:id="@+id/TDOA"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:textSize="40px" />
+
+        </RelativeLayout>
+    </TableRow>
 </TableLayout>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/activity_vertical_margin"
+    >
+
+    <TextView
+        android:id="@+id/tv_dialogTitle"
+        android:text="服务器地址"
+        android:gravity="center"
+        android:textSize="20sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+
+        android:layout_marginTop="10dp"
+        android:background="#F5F5F5" />
+
+    <EditText
+        android:hint="默认IP：172.20.10.9"
+        android:textSize="19sp"
+        android:id="@+id/editUserName"
+        android:layout_width="match_parent"
+        android:layout_height="40dp" />
+    <EditText
+        android:hint="默认端口号：3306"
+        android:textSize="19sp"
+        android:id="@+id/editPassword"
+        android:layout_width="match_parent"
+        android:layout_height="40dp" />
+    <CheckBox
+        android:id="@+id/cbServiceItem"
+        android:text="直接点击按钮按默认值连接"
+        android:checked="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <Button
+        android:text="连接服务器"
+        android:id="@+id/btnLogin"
+        android:layout_marginTop="3dp"
+        android:textSize="15sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:background="@color/colorPrimary"/>
+</LinearLayout>

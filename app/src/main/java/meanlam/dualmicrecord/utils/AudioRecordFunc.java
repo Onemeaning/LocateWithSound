@@ -6,7 +6,6 @@ package meanlam.dualmicrecord.utils;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
-import android.media.MediaRecorder;
 import android.util.Log;
 
 import java.io.File;
@@ -15,23 +14,19 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import meanlam.dualmicrecord.MainActivity;
-
 public class AudioRecordFunc {
 
     public static int micbufferSizeInBytes  = 0; // MIC缓冲区字节大小（立体声）
-    private int micbufferSizeInBytes1 = 0; // MIC缓冲区字节大小(单声道)
 
     private String micAudioRawPath      = ""; //AudioName裸音频数据文件 ，麦克风
     private String micAudioWavePath     = "";//NewAudioName可播放的音频文件
-    private String leftRawPath          = "";
-    private String leftWavPath          = "";
-    private String rightWavPath         = "";
-    private String rightRawPath         = "";
+
 
     public static AudioRecord micRecord;
     public static boolean ismicRecord = false;// 设置MIC正在录制的状态
     private static AudioRecordFunc             micInstance;
+    public static  long                      startTime = 0;
+    public static final int  maxTimeLength = 3150;
 
 
 
@@ -47,23 +42,12 @@ public class AudioRecordFunc {
         micbufferSizeInBytes = AudioRecord.getMinBufferSize(AudioFileFunc.AUDIO_SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 
-        micbufferSizeInBytes1 = AudioRecord.getMinBufferSize(AudioFileFunc.AUDIO_SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-
         // 获取音频文件路径
         micAudioRawPath = AudioFileFunc.getRawFilePath("mic", 1);
         micAudioWavePath = AudioFileFunc.getWavFilePath("mic", 1);
 
-        //左右声道文件
-        leftRawPath = AudioFileFunc.getRawFilePath("leftmic", 2);
-        leftWavPath = AudioFileFunc.getWavFilePath("leftmic", 2);
-
-        rightRawPath = AudioFileFunc.getRawFilePath("rightmic", 3);
-        rightWavPath = AudioFileFunc.getWavFilePath("rigtmic", 3);
-
-
         // 创建AudioRecord对象
-        micRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, AudioFileFunc.AUDIO_SAMPLE_RATE,
+        micRecord = new AudioRecord(AudioFileFunc.AUDIO_INPUT, AudioFileFunc.AUDIO_SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, micbufferSizeInBytes);
         Log.i("Onemeaning", "3、MIC正在录音。。。");
 
@@ -74,71 +58,84 @@ public class AudioRecordFunc {
 
         if (micRecord == null)
             creatAudioMicRecord();
+        try {
 
-        micRecord.startRecording();
-        ismicRecord = true;                     //设置MIC正在录音
-        MainActivity.startTime = System.currentTimeMillis();
-        MainActivity.updateMicStatus();
+            micRecord.startRecording();
+            ismicRecord = true;                     //设置MIC正在录音
+            startTime = System.currentTimeMillis();
 
-        Log.i("Onemeaning", "4、来自MIC的PCM文件正在写入内存");
-        writeMICDateTOFile();//往文件中写入裸数据
+            Log.i("Onemeaning", "4、来自MIC的PCM文件正在写入内存");
+            writeMICDateTOFile();//往文件中写入裸数据PCM数据
 
-        Log.i("Onemeaning", "5、来自MIC的WAV文件正在写入内存");
-        copyWaveFile(micAudioRawPath, micAudioWavePath, micbufferSizeInBytes);
-        copyWaveFile(leftRawPath, leftWavPath, micbufferSizeInBytes1);//给左声道裸数据加上头文件变成WAV文件
-        copyWaveFile(rightRawPath, rightWavPath, micbufferSizeInBytes1);//给右声道裸数据加上头文件变成WAV文件
+            Log.i("Onemeaning", "5、来自MIC的WAV文件正在写入内存");
+            copyWaveFile(micAudioRawPath, micAudioWavePath, micbufferSizeInBytes);
+
+        }
+        catch (IllegalStateException e) {
+            Log.i("Onemeaning", "call startAmr(File mRecAudioFile) failed!" + e.getMessage());
+        }
+
     }
 
     public void stopMicRecordAndFile() {
         closeMic();
     }
 
-    //    public long getRecordFileSize(){
-    //        return AudioFileFunc.getFileSize(micAudioRawPath);
-    //    }
-
     private void closeMic() {
 
-        if (micRecord != null) {
-            ismicRecord = false;//停止文件写入
-            micRecord.stop();
-            micRecord.release();//释放资源
-            micRecord = null;
+        try {
+            if (micRecord != null) {
+                ismicRecord = false;//停止文件写入
+                micRecord.stop();
+                micRecord.release();//释放资源
+                micRecord = null;
+            }
         }
+        catch (Exception e)
+        {
+
+        }
+
     }
 
-//    private double calculateVolume(byte[] buffer){
-//            double sumVolume = 0.0;
-//            double avgVolume = 0.0;
-//            double volume = 0.0;
-//            for(int i = 0; i < buffer.length; i+=2){
-//                int v1 = buffer[i] & 0xFF;
-//                int v2 = buffer[i + 1] & 0xFF;
-//                int temp = v1 + (v2 << 8);// 小端
-//                if (temp >= 0x8000) {
-//                    temp = 0xffff - temp;
-//                }
-//                sumVolume += Math.abs(temp);
-//            }
-//            avgVolume = sumVolume / buffer.length / 2;
-//            volume = Math.log10(1 + avgVolume) * 10;
-//            return volume;
-//        }
+    /**
+     * 取消录音
+     */
+    public void cancelRecord(){
+
+        try {
+
+            micRecord.stop();
+            micRecord.release();
+            ismicRecord = false;
+            micRecord = null;
+
+        }catch (RuntimeException e){
+
+            ismicRecord = false;
+            micRecord = null;
+        }
+        File file = new File(micAudioWavePath);
+        File file1 = new File(micAudioRawPath);
+        if (file.exists()&&file1.exists()) {
+            file.delete();
+            file1.delete();
+        }
+        micAudioWavePath = "";
+        micAudioRawPath = "";
+    }
+
 
     /**
-     * 这里将数据写入文件，但是并不能播放，因为AudioRecord获得的音频是原始的裸音频，
+     * 这里将数据写入文件，但是并不能播放，因为AudioRecord获得的音频是原始的裸音频也就是PCM文件，
      * 如果需要播放就必须加入一些格式或者编码的头信息。但是这样的好处就是你可以对音频的 裸数据进行处理，比如你要做一个爱说话的TOM
      * 猫在这里就进行音频的处理，然后重新封装 所以说这样得到的音频比较容易做一些音频的处理。
      */
     private void writeMICDateTOFile() {
         // new一个byte数组用来存一些字节数据，大小为缓冲区大小
         byte[] audiodata = new byte[micbufferSizeInBytes];
-        byte[] leftChannelAudioData = new byte[micbufferSizeInBytes / 2];
-        byte[] rightChannelAudioData = new byte[micbufferSizeInBytes / 2];
 
         FileOutputStream fos = null;
-        FileOutputStream fos1 = null;
-        FileOutputStream fos2 = null;
 
         int readsize = 0;
         try {
@@ -147,8 +144,7 @@ public class AudioRecordFunc {
                 file.delete();
             }
             fos = new FileOutputStream(file);// 建立一个可存取MIC数据流的文件
-            fos1 = new FileOutputStream(new File(leftRawPath));// 建立一个可存取MIC数据流的文件
-            fos2 = new FileOutputStream(new File(rightRawPath));// 建立一个可存取MIC数据流的文件
+
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -157,27 +153,19 @@ public class AudioRecordFunc {
 
             readsize = micRecord.read(audiodata, 0, micbufferSizeInBytes);
 
-            //双声道分离代码
-            for (int i = 0; i < readsize / 2; i = i + 2) {
-                leftChannelAudioData[i] = audiodata[2 * i];
-                leftChannelAudioData[i + 1] = audiodata[2 * i + 1];
-                rightChannelAudioData[i] = audiodata[2 * i + 2];
-                rightChannelAudioData[i + 1] = audiodata[2 * i + 3];
-            }
+//            //双声道分离代码
+//            for (int i = 0; i < readsize / 2; i = i + 2) {
+//                leftChannelAudioData[i] = audiodata[2 * i];
+//                leftChannelAudioData[i + 1] = audiodata[2 * i + 1];
+//                rightChannelAudioData[i] = audiodata[2 * i + 2];
+//                rightChannelAudioData[i + 1] = audiodata[2 * i + 3];
+//            }
 
             if (AudioRecord.ERROR_INVALID_OPERATION != readsize && fos != null) {
                 try {
                     fos.write(audiodata);
-                    fos1.write(leftChannelAudioData);
-                    fos2.write(rightChannelAudioData);
-
-                    //左右声道写入文件
-                    //                   new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File
-                    // (leftRawPath)))).write(leftChannelAudioData);
-                    //                   new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File
-                    // (rigtRawPath)))).write(rightChannelAudioData);
-
-
+//                    fos1.write(leftChannelAudioData);
+//                    fos2.write(rightChannelAudioData);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -186,8 +174,8 @@ public class AudioRecordFunc {
         try {
             if (fos != null) {
                 fos.close();// 关闭写入流
-                fos1.close();
-                fos2.close();
+//                fos1.close();
+//                fos2.close();
 
             }
         } catch (IOException e) {
@@ -212,19 +200,15 @@ public class AudioRecordFunc {
 
             totalAudioLen = in.getChannel().size();
             totalDataLen = totalAudioLen + 36;
-            if (flag == micbufferSizeInBytes1) {
-                WriteWaveFileHeader(out, totalAudioLen, totalDataLen,
-                        longSampleRate / 2, channels, byteRate);
-            } else if (flag == micbufferSizeInBytes) {
+              if (flag == micbufferSizeInBytes) {
                 WriteWaveFileHeader(out, totalAudioLen, totalDataLen,
                         longSampleRate, channels, byteRate);
+                Log.i("Onemeaning", "6、来自MIC的WAV音频已写入到文件中！");
             }
 
             while (in.read(data) != -1) {
                 out.write(data);
             }
-            Log.i("Onemeaning", "6、来自MIC的WAV音频已写入到文件中！");
-
             in.close();
             out.close();
         } catch (FileNotFoundException e) {
@@ -309,4 +293,8 @@ public class AudioRecordFunc {
 
         //        file.delete();
     }
+
+
+
+
 }
