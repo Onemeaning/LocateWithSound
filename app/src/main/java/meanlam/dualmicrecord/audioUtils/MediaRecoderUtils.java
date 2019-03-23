@@ -1,4 +1,4 @@
-package meanlam.dualmicrecord.utils;
+package meanlam.dualmicrecord.audioUtils;
 
 import android.media.MediaRecorder;
 import android.os.Environment;

@@ -3,13 +3,10 @@ package meanlam.dualmicrecord;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -17,16 +14,19 @@ import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,15 +36,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import meanlam.dualmicrecord.audioUtils.AudioFileFunc;
+import meanlam.dualmicrecord.audioUtils.AudioRecordFunc;
+import meanlam.dualmicrecord.audioUtils.PopupWindowFactory;
 import meanlam.dualmicrecord.networkutils.ConnectDataBase;
-import meanlam.dualmicrecord.utils.AudioRecordFunc;
-import meanlam.dualmicrecord.utils.PopupWindowFactory;
-import meanlam.dualmicrecord.utils.TimeUtils;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener{
 
     static final int VOICE_REQUEST_CODE = 66;
-
 
     private Button mButton;
     private Button mButtonclear;
@@ -52,6 +51,16 @@ public class MainActivity extends AppCompatActivity {
     private Button mButtonCalcTdoa;
     private Button mButtonRecord;
     private TextView mTitleView;
+
+    private Spinner sampleSpiner;//选择采样率
+    private Spinner pcmbitsSPiner;//选择编码位数
+    private EditText mTime;//用于获取用户输入的定义的时间
+
+    private List<String> pcmBitsData;
+    private ArrayAdapter pcmBitsRateAdapter;
+
+    private int SAMPLE_RATE = 44100;
+    private int ENCODING_BITS = 16;
 
     private static ImageView mImageView;
     private static TextView  mViewTime, tv_cancel;
@@ -95,27 +104,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
 
-    @SuppressLint("HandlerLeak")
-    public static final Handler mHandler = new Handler()
-    {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            if(msg.what==1)
-            {
-                mImageView.getDrawable().setLevel((int) (3000 + 9000 * volume / 100));
-                //setlevel（）中的值取值为0-10000，如果用了clip标签就是把图片剪切成10000份
-                mViewTime.setText(TimeUtils.long2String((System.currentTimeMillis()-startTime)));
-            }
-        }
-    };
-
-
-    public  Runnable mUpdateMicStatusTimer = new Runnable() {
-        public void run() {
-            updateMicStatus();
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,7 +117,6 @@ public class MainActivity extends AppCompatActivity {
                 {
                     ConnectDataBase.query(ConnectDataBase.getSQLConnection());
                     mHandler1.sendEmptyMessage(2);
-
                 }
                 catch (Exception e)
                 {
@@ -141,35 +128,41 @@ public class MainActivity extends AppCompatActivity {
                     msg.setData(bundle);
                     mHandler1.sendMessage(msg);
                 }
-
-
-
             }
         }).start();
 
         initViewId();
         requestPermissions();//6.0以上需要权限申请
         makeDirs();
-
-
         micInstance = AudioRecordFunc.getInstance();
 
-        MainActivity.this.startListener();
-        //用于监听，点击播放
-        liebiao.setOnItemClickListener(new OnItemClickListenerImp());
-        //listView长按事件,用于长按删除文件
-        liebiao.setOnItemLongClickListener(new OnItemLongClickListenerImp());
+        this.startListener();
         mTitleView.setText("录音文件总数目为："+updateTitleInfo());
-        setOnAudioStatusUpdateListener(new OnAudioStatusUpdateListener() {
-            @Override
-            public void onUpdate(double db, long time) {
 
-                mImageView.getDrawable().setLevel((int) (3000 + 9000 * volume / 100));
-                //setlevel（）中的值取值为0-10000，如果用了clip标签就是把图片剪切成10000份
-                mViewTime.setText(TimeUtils.long2String(time));
-            }
+        mTime.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onStop(String filePath) {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+//                Log.i("Ansen","内容改变之前调用:"+s);
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                Log.i("Ansen","内容改变，可以去告诉服务器:"+s);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+             if(s!=null&&!"".equals(s.toString()))
+             {
+                 mTitleView.setTextColor(Color.BLUE);
+                 mTitleView.setText("成功设置录音时间"+s+"ms");
+                AudioFileFunc.maxTimeLength = Integer.parseInt(s.toString());
+             }
+             else
+             {
+                 mTitleView.setTextColor(Color.RED);
+                 mTitleView.setText("警告！！没有设置时间录制时间");
+             }
 
             }
         });
@@ -188,6 +181,8 @@ public class MainActivity extends AppCompatActivity {
         mButtonCalcTdoa = findViewById(R.id.button_calcTdoa);
         mButtonRecord = findViewById(R.id.bt_record);
         mTitleView = findViewById(R.id.titleText);
+        mTime = findViewById(R.id.ev_times);
+
 
         liebiao =  this.findViewById(R.id.liebiao);
 
@@ -196,10 +191,44 @@ public class MainActivity extends AppCompatActivity {
         mPop = new PopupWindowFactory(this, view);
 
         //PopupWindow布局文件里面的控件
-        mImageView = (ImageView) view.findViewById(R.id.iv_recording_icon);
-        mViewTime = (TextView) view.findViewById(R.id.tv_recording_time);
-        tv_cancel = (TextView) view.findViewById(R.id.tv_recording_info);
+        mImageView = view.findViewById(R.id.iv_recording_icon);
+        mViewTime =  view.findViewById(R.id.tv_recording_time);
+        tv_cancel =  view.findViewById(R.id.tv_recording_info);
 
+
+        //Spiner控件
+        sampleSpiner = findViewById(R.id.spiner_samplerate);
+        pcmbitsSPiner = findViewById(R.id.spiner_pcmbits);
+
+
+        /*
+        * 采样率：音频的采样频率，每秒钟能够采样的次数，采样率越高，音质越高。
+        * 给出的实例是44100、22050、11025但不限于这几个参数。
+        * 例如要采集低质量的音频就可以使用4000、8000等低采样率。
+        */
+        ArrayAdapter<CharSequence> sequenceArrayAdapter = ArrayAdapter.createFromResource(this, R.array.sampleRate, android.R.layout.select_dialog_singlechoice);
+        //3、为适配器设置下拉菜单的样式
+        sequenceArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        //4、将适配器配置到下拉列表上
+        sampleSpiner.setAdapter(sequenceArrayAdapter);
+        //5、给下拉菜单设置监听事件
+        sampleSpiner.setOnItemSelectedListener(this);
+
+
+//        /*
+//        * 采样位数：安卓暂时支持16位和8位两种
+//        * */
+        pcmBitsData  = new ArrayList<String>();
+        pcmBitsData.add("16");
+        pcmBitsData.add("8");
+
+        pcmBitsRateAdapter=new ArrayAdapter(this,android.R.layout.select_dialog_singlechoice,pcmBitsData);
+        //3、为适配器设置下拉菜单的样式
+        pcmBitsRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        //4、将适配器配置到下拉列表上
+        pcmbitsSPiner.setAdapter(pcmBitsRateAdapter);
+        //5、给下拉菜单设置监听事件
+        pcmbitsSPiner.setOnItemSelectedListener(this);
     }
 
     // 存储媒体已经挂载，并且挂载点可读/写
@@ -261,69 +290,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //删除录音文件
-    private class OnItemLongClickListenerImp implements AdapterView.OnItemLongClickListener {
-        @Override
-        public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long
-                id) {
-            //           定义AlterDialog.Builder对象，当长按列表项时弹出确认删除对话框
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setMessage("确定删除吗？");
-            builder.setTitle("提示");
 
-            //添加AlertDialog.Builder对象的setPositiveButton()方法
-            builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    if (luyinliebiao.remove(position) != null) {
-                        File[] files = baocunlujin.listFiles();
-                        files[position].delete();
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
-                        File[] files1 = mPcmDirectory.listFiles();
-                        files1[position].delete();
-
-
-                        Toast.makeText(getBaseContext(), "成功删除录音", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getBaseContext(), "取消删除录音", Toast.LENGTH_SHORT).show();
-                    }
-                    MainActivity.this.adpter.notifyDataSetChanged();
-
-                }
-            });
-            //添加AlertDialog.Builder对象的setNegativeButton()方法
-            builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-
-                }
-            });
-            builder.create().show();
-            return false;
-        }
-    }
-
-
-    //播放列表音频文件
-    private class OnItemClickListenerImp implements AdapterView.OnItemClickListener {
-
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            if (MainActivity.this.adpter.getItem(position) instanceof Map) {
-                Map<?, ?> map = (Map<?, ?>) MainActivity.this.adpter.getItem(position);
-                Uri uri = Uri.fromFile(
-                        new File(MainActivity.this.baocunlujin.toString() + File.separator + map
-                                .get("fileName")));
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.setDataAndType(uri, "audio/*");
-                MainActivity.this.startActivity(intent);
-            }
-
+        switch (parent.getId())
+        {
+            case R.id.spiner_samplerate:
+                String sampleRate = MainActivity.this.getResources().getStringArray(R.array.sampleRate)[position];
+               mTitleView.setText("成功设置采样率为："+sampleRate);
+                SAMPLE_RATE = Integer.parseInt(sampleRate);
+                break;
+            case R.id.spiner_pcmbits:
+                String encodBit = pcmBitsData.get(position);
+               mTitleView.setText("成功设置编码位数："+ encodBit);
+                ENCODING_BITS = Integer.parseInt(encodBit);
+                break;
         }
 
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
 
     }
+
 
     //获取录音文件列表,以及计算好的TDOA值
     private void getFileList() {
@@ -346,11 +337,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //更新TitleText的上传提示
-
     private String updateTitleInfo()
     {
         File[] files = MainActivity.this.baocunlujin.listFiles();
-
         return String.valueOf(files.length);
     }
 
@@ -358,35 +347,34 @@ public class MainActivity extends AppCompatActivity {
     Runnable timer = new Runnable() {
         @Override
         public void run() {
-           if (System.currentTimeMillis()-startTime>= AudioRecordFunc.maxTimeLength)
+
+            long diffTime = System.currentTimeMillis()-startTime;
+           if (diffTime>= AudioFileFunc.maxTimeLength)
            {
                try{
+
+                   handler.removeCallbacks(timer);
+
+                   mTitleView.setText(diffTime+"ms");
                    new ThreadTwo().start();
                    mButtonRecord.setEnabled(true);
                    mButtonRecord.setText("点击录音");
                    mButtonRecord.setBackgroundColor(Color.BLUE);
 
-                   //               handler.removeCallbacks(timer);
-//                    Thread.sleep(1000);
-//                   mButtonRecord.setEnabled(false);
-//                   mButtonRecord.setText("正在录音");
-//                   mButtonRecord.setBackgroundColor(Color.GRAY);
-//                   new ThreadOne().start();
-//                   MainActivity.startTime = System.currentTimeMillis();
-
-                   handler.removeCallbacks(timer);
-//                   handler.postDelayed(this, 10);//连续录音就打开这个
                }
                catch (Exception e)
                {
-                   handler.removeCallbacks(timer);
                    mButtonRecord.setEnabled(true);
                    mButtonRecord.setText("点击录音");
                    mButtonRecord.setBackgroundColor(Color.BLUE);
+                   handler.removeCallbacks(timer);
                }
-
            }
-            handler.postDelayed(this, 10);
+           else
+           {
+               handler.postDelayed(this, 100);
+           }
+
         }
 
     };
@@ -446,90 +434,21 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (v.getId() == R.id.bt_record) {
                     Toast.makeText(MainActivity.this,"开始录音",Toast.LENGTH_SHORT).show();
+                    AudioFileFunc.initParams(SAMPLE_RATE,ENCODING_BITS);
+
                     mButtonRecord.setEnabled(false);
                     mButtonRecord.setText("正在录音");
                     mButtonRecord.setBackgroundColor(Color.GRAY);
                     new ThreadOne().start();
-                   handler.postDelayed(timer,10);
+                    handler.postDelayed(timer,10);
 
                 }
             }
         });
 
-        mButton.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int start_x = 0, start_y = 0, end_x, end_y, mov_x, mov_y;
-                switch (event.getAction()) {
-
-                    case MotionEvent.ACTION_DOWN:
-                        tv_cancel.setTextColor(Color.parseColor("#FFFFFF"));
-                        mImageView.setImageDrawable(context.getResources().getDrawable(R.drawable.record_microphone));
-                        mPop.showAtLocation(rl, Gravity.CENTER, 0, 0);
-                        mButton.setText("松开保存");
-
-                        try {
-                            handler.removeCallbacks(timer);
-                            mButtonRecord.setEnabled(true);
-                            mButtonRecord.setText("点击录音");
-                            mButtonRecord.setBackgroundColor(Color.BLUE);
-
-                            ThreadOne t1 = new ThreadOne();
-                            mImageView.getDrawable().setLevel((int) (3000 + 9000 * 40 / 100));
-                            //setlevel（）中的值取值为0-10000，如果用了clip标签就是把图片剪切成10000份
-                            mViewTime.setText("正在录音");
-                            t1.start();
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        break;
-
-                    case MotionEvent.ACTION_UP:
-                        try {
-                            ThreadTwo t2 = new ThreadTwo();
-                            t2.start();
-                            Thread.sleep(400);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-
-                        mPop.dismiss();
-                        mButton.setText("按住录音");
-                        Log.i("Onemeaning", "7、手指已经离开录音键");
-                        break;
-
-                    case MotionEvent.ACTION_MOVE:
-                        end_y = (int) event.getY();
-                        mov_y = Math.abs(start_y - end_y);
-                        if (mov_y < 300 && mov_y > 150) {
-                            try {
-                                new Thread()
-                                {
-                                    @Override
-                                    public void run() {
-                                        micInstance.cancelRecord();
-                                    }
-                                }.start();
-                                mPop.dismiss();
-                            }
-                            catch (Exception e) {
-                                e.printStackTrace();
-                            }
-
-                        }
-                        if (mov_y < 100) {
-                            //                            tv_cancel.setText("松开保存");
-                            //                            tv_cancel.setTextColor(Color.parseColor
-                            // ("#FFFFFF"));
-                        }
-                        break;
-
-                }
-                return true;
-            }
-        });
     }
+
+                                // 该命用于以销毁定时器，一般可以在onStop里面调用
 
     private class ThreadOne extends Thread {
         @Override
@@ -549,72 +468,10 @@ public class MainActivity extends AppCompatActivity {
             String length = updateTitleInfo();
             bundle.putString("length","录音文件的个数："+length);
             msg.setData(bundle);
-            mHandler1.sendMessage(msg);
-//            mHandler1.sendEmptyMessage(2);
+           mHandler1.sendMessage(msg);
         }
 
-    }
-
-    /*
-     *下面是用于更新麦克风录音时动画的状态的
-     */
-
-    private OnAudioStatusUpdateListener audioStatusUpdateListener;
-
-
-    public void setOnAudioStatusUpdateListener(OnAudioStatusUpdateListener
-                                                       audioStatusUpdateListener) {
-        this.audioStatusUpdateListener = audioStatusUpdateListener;
-    }
-
-    /**
-     * 用于实时获取手机麦克风的音量大小
-     *
-     * @author Meanlam
-     */
-    private void updateMicStatus() {
-
-        if (AudioRecordFunc.micRecord != null) {
-            Log.i("Meanlam", "OK ");
-            byte[] byte_buffer = new byte[AudioRecordFunc.micbufferSizeInBytes];
-            int readSize = AudioRecordFunc.micRecord.read(byte_buffer, 0, AudioRecordFunc
-                    .micbufferSizeInBytes);
-            Log.i("Onemeaning", "readSize:: " + readSize);
-            long v = 0;
-            for (int i = 0; i < byte_buffer.length; i++) {
-                v += byte_buffer[i] * byte_buffer[i];
-            }
-            // 平方和除以数据总长度，得到音量大小。
-            double mean = v / (double) readSize;
-            volume = 20 * Math.log10(mean);
-
-//            if (null != audioStatusUpdateListener) {
-//                audioStatusUpdateListener.onUpdate(volume, System.currentTimeMillis() - startTime);
-//            }
-
-//            Log.i("Onemeaning", "volum:: " + volume);
-
-        }
-            mHandler.sendEmptyMessage(1);
-            mHandler.postDelayed(mUpdateMicStatusTimer, 100);
-    }
-
-
-    public interface OnAudioStatusUpdateListener {
-        /**
-         * 录音中...
-         *
-         * @param db   当前声音分贝
-         * @param time 录音时长
-         */
-        public void onUpdate(double db, long time);
-
-        /**
-         * 停止录音
-         *
-         * @param filePath 保存路径
-         */
-        public void onStop(String filePath);
     }
 
 }
+

@@ -1,4 +1,4 @@
-package meanlam.dualmicrecord.utils;
+package meanlam.dualmicrecord.audioUtils;
 
 /**
  * Created by Administrator on 2018/5/31.

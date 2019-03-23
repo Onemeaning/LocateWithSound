@@ -1,4 +1,4 @@
-package meanlam.dualmicrecord.utils;
+package meanlam.dualmicrecord.audioUtils;
 
 /**
  * Created by Administrator on 2018/5/31.
@@ -26,9 +26,6 @@ public class AudioRecordFunc {
     public static boolean ismicRecord = false;// 设置MIC正在录制的状态
     private static AudioRecordFunc             micInstance;
     public static  long                      startTime = 0;
-    public static final int  maxTimeLength = 3150;
-
-
 
     public synchronized static AudioRecordFunc getInstance() {
         if (micInstance == null)
@@ -40,15 +37,15 @@ public class AudioRecordFunc {
 
         // 获得缓冲区字节大小
         micbufferSizeInBytes = AudioRecord.getMinBufferSize(AudioFileFunc.AUDIO_SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+                AudioFormat.CHANNEL_IN_STEREO, AudioFileFunc.AUDIO_ENCODING_BYTES);
 
         // 获取音频文件路径
-        micAudioRawPath = AudioFileFunc.getRawFilePath("mic", 1);
-        micAudioWavePath = AudioFileFunc.getWavFilePath("mic", 1);
+        micAudioRawPath = AudioFileFunc.getRawFilePath();
+        micAudioWavePath = AudioFileFunc.getWavFilePath();
 
         // 创建AudioRecord对象
         micRecord = new AudioRecord(AudioFileFunc.AUDIO_INPUT, AudioFileFunc.AUDIO_SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, micbufferSizeInBytes);
+                AudioFormat.CHANNEL_IN_STEREO, AudioFileFunc.AUDIO_ENCODING_BYTES, micbufferSizeInBytes);
         Log.i("Onemeaning", "3、MIC正在录音。。。");
 
     }
@@ -293,8 +290,6 @@ public class AudioRecordFunc {
 
         //        file.delete();
     }
-
-
 
 
 }

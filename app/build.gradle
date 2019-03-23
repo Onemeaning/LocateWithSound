@@ -5,7 +5,7 @@ android {
     buildToolsVersion '28.0.1'
 
     defaultConfig {
-        applicationId "meanlam.dualmicrecord"
+        applicationId "meanlam.dualmicrecord2"
         minSdkVersion 14
         targetSdkVersion 27
         versionCode 1
@@ -20,11 +20,11 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support.constraint:constraint-layout:1.1.3'
-    compile 'com.android.support:design:27.1.1'
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:27.1.1'
-    compile project(':mylibrary')
-    compile files('libs/mysql5.04.jar')
+    implementation   fileTree(include: ['*.jar'], dir: 'libs')
+    implementation  'com.android.support.constraint:constraint-layout:1.1.3'
+    implementation  'com.android.support:design:27.1.1'
+    testImplementation  'junit:junit:4.12'
+    implementation  'com.android.support:appcompat-v7:27.1.1'
+    implementation  project(':mylibrary')
+    implementation  files('libs/mysql5.04.jar')
 }

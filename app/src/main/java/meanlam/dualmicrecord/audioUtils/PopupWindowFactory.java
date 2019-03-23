@@ -1,4 +1,4 @@
-package meanlam.dualmicrecord.utils;
+package meanlam.dualmicrecord.audioUtils;
 
 import android.content.Context;
 import android.view.KeyEvent;

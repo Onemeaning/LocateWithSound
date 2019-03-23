@@ -24,7 +24,7 @@ import meanlam.dualmicrecord.networkutils.ConnectDataBase;
 import meanlam.dualmicrecord.networkutils.SelfDialog;
 import meanlam.dualmicrecord.uploadfileutil.FormFile;
 import meanlam.dualmicrecord.uploadfileutil.SocketHttpRequester;
-import meanlam.dualmicrecord.utils.IPAddress;
+import meanlam.dualmicrecord.networkutils.IPAddress;
 
 public class ConnectDBActivity extends AppCompatActivity {
 

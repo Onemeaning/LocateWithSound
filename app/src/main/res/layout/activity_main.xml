@@ -15,16 +15,87 @@
         android:id="@+id/titleText"
         android:layout_width="match_parent"
         android:layout_height="30dp"
-        android:textSize="18sp"
+        android:gravity="center_vertical|center"
+        android:hint="此处显示录音文件数目:"
         android:textColor="@color/colorPrimary"
-        android:hint="此处显示录音文件数目:" />
+        android:textSize="18sp" />
+
+    <Spinner
+        android:layout_below="@+id/titleText"
+        android:id="@+id/spiner_samplerate"
+        android:entries="@array/sampleRate"
+        android:layout_width="140dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:background="#eeeeee"
+        />
+
+    <TextView
+        android:id="@+id/tv_hz"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:textSize="26sp"
+        android:gravity="center_vertical"
+        android:text="@string/hz"
+        android:layout_toRightOf="@+id/spiner_samplerate"
+        android:layout_below="@+id/titleText"
+        />
+
+    <Spinner
+        android:layout_toRightOf="@+id/tv_hz"
+        android:layout_below="@+id/titleText"
+        android:layout_width="140dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:id="@+id/spiner_pcmbits"
+        android:background="#eeeeee"
+        />
+
+    <TextView
+        android:id="@+id/tv_bits"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:textSize="26sp"
+        android:gravity="center_vertical"
+        android:text="@string/bits"
+        android:layout_toRightOf="@+id/spiner_pcmbits"
+        android:layout_below="@+id/titleText"
+        />
+
+
+    <TextView
+        android:id="@+id/tv_timecounts"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:textSize="26sp"
+        android:gravity="center_vertical"
+        android:text="@string/timecounts"
+        android:layout_below="@+id/spiner_samplerate"
+        />
+
+    <EditText
+        android:id="@+id/ev_times"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="10dp"
+        android:inputType="number"
+        android:textSize="18sp"
+        android:gravity="center_vertical"
+        android:layout_toRightOf="@+id/tv_timecounts"
+        android:layout_below="@+id/tv_hz"
+        android:hint="单位：ms"
+        />
 
 
     <ListView
+        android:layout_marginTop="10dp"
         android:id="@+id/liebiao"
+        android:layout_below="@+id/tv_timecounts"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="35dp"
         android:layout_marginBottom="110dp" />
 
     <Button
