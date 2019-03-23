@@ -40,7 +40,7 @@ import meanlam.dualmicrecord.audioUtils.AudioFileFunc;
 import meanlam.dualmicrecord.audioUtils.AudioRecordFunc;
 import meanlam.dualmicrecord.audioUtils.PopupWindowFactory;
 import meanlam.dualmicrecord.networkutils.ConnectDataBase;
-//测试我再电脑更新之后，在同步到电脑上会不会有效果
+
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener{
 
     static final int VOICE_REQUEST_CODE = 66;
