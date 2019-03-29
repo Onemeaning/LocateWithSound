@@ -99,11 +99,6 @@ public class ConnectDataBase {
 
             byte [] bytes= IOUtils.toByteArray(new FileInputStream((Environment
                     .getExternalStorageDirectory() + "/record/" + "mic20181115170629.wav")));
-//            Blob blob = org.hibernate.Hibernate.Hibernate.createBlob(bytes);
-
-//
-//            pps.setBlob(3, blob);
-//             pps.executeUpdate();
 
         }
         catch (Exception e)

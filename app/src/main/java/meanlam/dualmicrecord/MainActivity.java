@@ -3,10 +3,12 @@ package meanlam.dualmicrecord;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -22,9 +24,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -38,14 +38,12 @@ import java.util.Map;
 
 import meanlam.dualmicrecord.audioUtils.AudioFileFunc;
 import meanlam.dualmicrecord.audioUtils.AudioRecordFunc;
-import meanlam.dualmicrecord.audioUtils.PopupWindowFactory;
 import meanlam.dualmicrecord.networkutils.ConnectDataBase;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener{
 
     static final int VOICE_REQUEST_CODE = 66;
 
-    private Button mButton;
     private Button mButtonclear;
     private Button mButtonCon;
     private Button mButtonCalcTdoa;
@@ -62,13 +60,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private int SAMPLE_RATE = 44100;
     private int ENCODING_BITS = 16;
 
-    private static ImageView mImageView;
-    private static TextView  mViewTime, tv_cancel;
     private AudioRecordFunc  micInstance;
 
     private Context            context;
-    private PopupWindowFactory mPop;
-    private RelativeLayout     rl;
+
     private        ListView                  liebiao       = null;
     private        SimpleAdapter             adpter        = null;
 
@@ -76,8 +71,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private        Boolean                   sdcardExist   = false;
     public       static  File                      baocunlujin   = null;
     private        File                      mPcmDirectory = null;
-    private        boolean                   isDistory     = false;
-    private      static   double                    volume        = 0;
+
+
 
     public static  long                      startTime     = 0;
 
@@ -174,8 +169,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
      */
     private void initViewId() {
         context = this;
-        rl = findViewById(R.id.rl);
-        mButton = findViewById(R.id.button);
         mButtonclear = findViewById(R.id.buttonclear);
         mButtonCon = findViewById(R.id.button_TOconnect);
         mButtonCalcTdoa = findViewById(R.id.button_calcTdoa);
@@ -188,13 +181,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         //PopupWindow的布局文件
         final View view = View.inflate(this, R.layout.layout_microphone, null);
-        mPop = new PopupWindowFactory(this, view);
-
-        //PopupWindow布局文件里面的控件
-        mImageView = view.findViewById(R.id.iv_recording_icon);
-        mViewTime =  view.findViewById(R.id.tv_recording_time);
-        tv_cancel =  view.findViewById(R.id.tv_recording_info);
-
 
         //Spiner控件
         sampleSpiner = findViewById(R.id.spiner_samplerate);
@@ -258,8 +244,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 (ContextCompat.checkSelfPermission(context,
                         Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
                 ) {
-            //            startListener();
-
             //判断是否开启语音权限
         } else {
             //请求获取摄像头权限
@@ -429,22 +413,35 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             }
         });
-        mButtonRecord.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (v.getId() == R.id.bt_record) {
+
+        mButtonRecord.setOnClickListener(v ->
+                {
                     Toast.makeText(MainActivity.this,"开始录音",Toast.LENGTH_SHORT).show();
                     AudioFileFunc.initParams(SAMPLE_RATE,ENCODING_BITS);
-
                     mButtonRecord.setEnabled(false);
                     mButtonRecord.setText("正在录音");
                     mButtonRecord.setBackgroundColor(Color.GRAY);
                     new ThreadOne().start();
                     handler.postDelayed(timer,10);
-
                 }
-            }
-        });
+                                      );
+
+        //使用lambda表达式实现匿名内部类
+        mTitleView.setOnClickListener(v ->
+                {
+                    Uri uri = Uri.fromFile(MainActivity.baocunlujin);
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.setDataAndType(uri,"*/*");
+                    try {
+                        startActivity(intent);
+                    } catch (ActivityNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+                                  );
+
 
     }
 

@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 27
-    buildToolsVersion '28.0.1'
+    buildToolsVersion '28.0.3'
 
     defaultConfig {
         applicationId "meanlam.dualmicrecord2"
@@ -17,6 +17,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
+//    packagingOptions {exclude 'META-INF/INDEX.LIST'}//因为报错才补上去的
 }
 
 dependencies {
@@ -25,6 +30,5 @@ dependencies {
     implementation  'com.android.support:design:27.1.1'
     testImplementation  'junit:junit:4.12'
     implementation  'com.android.support:appcompat-v7:27.1.1'
-    implementation  project(':mylibrary')
     implementation  files('libs/mysql5.04.jar')
 }
